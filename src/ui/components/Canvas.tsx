@@ -73,43 +73,29 @@ const SvgEditor = forwardRef<SvgEditorRef, SvgEditorProps>(({ vehicleData }, ref
         }
     };
 
-    useImperativeHandle(ref, () => ({
-        downloadImage: () => {
-            const dataURL = editor?.canvas?.toDataURL({
-                format: 'png',
-                quality: 1,
-            });
-            if (dataURL) {
-                const link = document.createElement('a');
-                link.href = dataURL;
-                link.download = 'sketch.png';
-                link.click();
-            }
-        },
-    }));
-
     const addImageToCanvas = (value: string) => {
-        FabricImage.fromURL(
-            value,
-            (image) => {
-                if (image) {
-                    image.set({
-                        currentSrc: value,
-                        selectable: true,
-                    });
-                    editor?.canvas.add(image);
-                    editor?.canvas.renderAll();
-                }
-            },
-            { crossOrigin: 'Anonymous' }
-        );
+        const image = new Image();
+        image.crossOrigin = 'Anonymous';
+        image.src = value;
+
+        image.onload = () => {
+            const imgInstance = new FabricImage(image, {
+                left: 250,
+                top: 250,
+                scaleX: 0.2,
+                scaleY: 0.2,
+            });
+
+            editor?.canvas.add(imgInstance);
+            editor?.canvas.renderAll();
+        };
     };
 
     useEffect(() => {
-        if (vehicleData?.files) {
-            const fileUrls = Object.values(vehicleData);
-            fileUrls.forEach((url) => {
-                addImageToCanvas(url);
+        if (vehicleData) {
+            Object.entries(vehicleData).forEach(([, value]: [string, string]) => {
+                console.log('🚀 ~ Object.entries ~ value:', value);
+                addImageToCanvas(value);
             });
         }
     }, [vehicleData]);
@@ -136,6 +122,19 @@ const SvgEditor = forwardRef<SvgEditorRef, SvgEditorProps>(({ vehicleData }, ref
             reader.readAsDataURL(files[0]);
         }
     };
+
+    useImperativeHandle(ref, () => ({
+        downloadImage() {
+            const dataURL = editor?.canvas.toDataURL({
+                format: 'png',
+                quality: 1,
+            });
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = 'sketch.png';
+            link.click();
+        },
+    }));
 
     return (
         <div className="App flex p-4">
