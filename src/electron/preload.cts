@@ -1,5 +1,8 @@
-const electron = require('electron');
+import { ipcRenderer } from 'electron';
+import electron from 'electron';
 
 electron.contextBridge.exposeInMainWorld('electron', {
-    getPrinters: () => console.log('print cd'),
+    getPrinters: () => ipcRenderer.invoke('get-printers'),
+    printData: (data: Blob, printerName: string) =>
+        ipcRenderer.invoke('print-canvas', data, printerName),
 });

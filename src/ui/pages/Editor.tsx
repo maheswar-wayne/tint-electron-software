@@ -8,9 +8,11 @@ const Editor = () => {
     const [brands, setBrands] = useState<{ name: string; _id: string }[]>([]);
     const [yearData, setYearData] = useState<{ name: string; _id: string }[]>([]);
     const [modelData, setModelData] = useState<{ name: string; _id: string }[]>([]);
+    const [printers, setPrinters] = useState([]);
     const [selectedBrand, setSelectedBrand] = useState('');
     const [selectedYear, setSelectedYear] = useState('');
     const [selectedModel, setSelectedModel] = useState('');
+    const [selectedPrinter, setSelectedPrinter] = useState('');
     const [vehicleData, setVehicleData] = useState([]);
 
     const svgEditorRef = useRef<any>(null);
@@ -31,10 +33,23 @@ const Editor = () => {
         for (const { model, _id } of response.data.data) {
             modelData.push({ name: model, _id });
         }
+        console.log("🚀 ~ getModel ~ modelData:", modelData)
         setModelData(modelData);
     };
 
+    const getPrinter = async () => {
+        const printers = await window.electron.getPrinters();
+        setPrinters(printers.map((printer) => ({ name: printer.name, _id: printer.name })));
+    };
+
+    const handlePrint = async () => {
+        const data = await svgEditorRef.current?.getData();
+        console.log('🚀 ~ handlePrint ~ data:', data);
+        window.electron.printData(data, selectedPrinter);
+    };
+
     useEffect(() => {
+        getPrinter();
         getBrands();
     }, []);
 
@@ -71,13 +86,22 @@ const Editor = () => {
                     />
                     <Button onClick={() => handleSearch()}>Search</Button>
                 </div>
-                <Button
-                    onClick={() => {
-                        svgEditorRef.current?.downloadImage();
-                    }}
-                >
-                    Cut Sketch
-                </Button>
+                <div className="flex gap-4">
+                    <Select
+                        itemLabel="Printers"
+                        items={printers && printers}
+                        setItems={setSelectedPrinter}
+                    />
+
+                    <Button
+                        onClick={() => {
+                            handlePrint();
+                            // svgEditorRef.current?.downloadImage();
+                        }}
+                    >
+                        Cut Sketch
+                    </Button>
+                </div>
             </div>
             <SvgEditor vehicleData={vehicleData && vehicleData.files} ref={svgEditorRef} />
         </div>
