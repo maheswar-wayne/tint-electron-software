@@ -10,7 +10,7 @@ app.on('ready', () => {
         },
     });
 
-    win.webContents.openDevTools();
+    if (isDev()) win.webContents.openDevTools();
 
     // Fetch available printers
     ipcMain.handle('get-printers', () => {

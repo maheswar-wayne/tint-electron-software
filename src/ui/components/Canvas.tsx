@@ -3,8 +3,10 @@ import { FabricImage, FabricObject, PencilBrush } from 'fabric';
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import { FaImage, FaRegCircle, FaRegTrashAlt } from 'react-icons/fa';
 import { MdOutlineRectangle, MdRedo, MdUndo, MdZoomIn, MdZoomOut } from 'react-icons/md';
-import { TbLine } from 'react-icons/tb';
+import { TbFlipHorizontal, TbFlipVertical, TbLine } from 'react-icons/tb';
 import { BiPencil } from 'react-icons/bi';
+import Ruler from './ruler/Ruler';
+import { AiOutlineRotateRight } from 'react-icons/ai';
 
 interface VehicleData {
     files: string;
@@ -91,14 +93,44 @@ const SvgEditor = forwardRef<SvgEditorRef, SvgEditorProps>(({ vehicleData }, ref
         };
     };
 
+    const rotateObject = () => {
+        const activeObject = editor?.canvas?.getActiveObject();
+        if (activeObject) {
+            const currentAngle = activeObject.angle || 0;
+            activeObject.rotate(currentAngle + 90);
+            editor?.canvas.renderAll();
+        } else {
+            console.warn('No active object selected for rotation.');
+        }
+    };
+
+    const mirrorObjectHorizontally = () => {
+        const activeObject = editor?.canvas?.getActiveObject();
+        if (activeObject) {
+            activeObject.set('flipY', !activeObject.flipY);
+            editor?.canvas.renderAll();
+        } else {
+            console.warn('No active object selected for mirroring.');
+        }
+    };
+
+    const mirrorObjectVertically = () => {
+        const activeObject = editor?.canvas?.getActiveObject();
+        if (activeObject) {
+            activeObject.set('flipX', !activeObject.flipX);
+            editor?.canvas.renderAll();
+        } else {
+            console.warn('No active object selected for mirroring.');
+        }
+    };
+
     useEffect(() => {
         if (vehicleData) {
             Object.entries(vehicleData).forEach(([, value]: [string, string]) => {
-                console.log('🚀 ~ Object.entries ~ value:', value);
                 addImageToCanvas(value);
             });
         }
-    }, [vehicleData]);
+    }, [addImageToCanvas, vehicleData]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -128,13 +160,54 @@ const SvgEditor = forwardRef<SvgEditorRef, SvgEditorProps>(({ vehicleData }, ref
             const dataURL = editor?.canvas.toDataURL({
                 format: 'png',
                 quality: 1,
+                multiplier: 0,
             });
             const link = document.createElement('a');
             link.href = dataURL;
             link.download = 'sketch.png';
             link.click();
         },
+        getData() {
+            return editor?.canvas.toDataURL();
+        },
+        getCoordinates() {
+            if (!editor?.canvas) return [];
+            console.log(editor?.canvas?.toJSON())
+
+            // Map through all objects on the canvas and extract their coordinates
+            return editor.canvas.getObjects().map((obj) => {
+                const { left, top, width, height, angle, scaleX, scaleY } = obj;
+                return {
+                    left,
+                    top,
+                    width: width * scaleX,
+                    height: height * scaleY,
+                    angle,
+                };
+            });
+        },
     }));
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Delete') {
+                deleteObject();
+            } else if (event.key === 'o') {
+                onAddCircle();
+            } else if (event.key === 'r') {
+                onAddRectangle();
+            } else if (event.key === 'p') {
+                onAddPath();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Cleanup the event listener on component unmount
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [deleteObject, onAddCircle, onAddPath, onAddRectangle]);
 
     return (
         <div className="App flex p-4">
@@ -179,6 +252,7 @@ const SvgEditor = forwardRef<SvgEditorRef, SvgEditorProps>(({ vehicleData }, ref
                     <MdUndo size={32} className="hover:scale-110 hover:transition" onClick={undo} />
                     <MdRedo size={32} className="hover:scale-110 hover:transition" onClick={redo} />
                 </div>
+
                 <div className="flex justify-evenly w-full gap-4">
                     <FaRegTrashAlt
                         size={30}
@@ -195,8 +269,37 @@ const SvgEditor = forwardRef<SvgEditorRef, SvgEditorProps>(({ vehicleData }, ref
                         />
                     </label>
                 </div>
+                <div className="flex justify-evenly w-full gap-4">
+                    <TbFlipHorizontal
+                        size={32}
+                        className="hover:scale-110 hover:transition"
+                        onClick={mirrorObjectHorizontally}
+                    />
+                    <TbFlipVertical
+                        size={32}
+                        className="hover:scale-110 hover:transition"
+                        onClick={mirrorObjectVertically}
+                    />
+                </div>
+                <div className="flex justify-evenly w-full gap-4">
+                    <AiOutlineRotateRight
+                        size={32}
+                        className="hover:scale-110 hover:transition"
+                        onClick={rotateObject}
+                    />
+                    <TbFlipVertical
+                        size={32}
+                        className="hover:scale-110 hover:transition opacity-0"
+                    />
+                </div>
             </div>
-            <FabricJSCanvas className="w-11/12 border border-black" onReady={onReady} />
+            <div className="relative w-11/12 h-[80vh] overflow-scroll">
+                <Ruler orientation="horizontal" length={32.8} width={60} />
+                <div className="flex w-full">
+                    <Ruler orientation="vertical" length={100} width={60} />
+                    <FabricJSCanvas className="w-11/12 border border-black" onReady={onReady} />
+                </div>
+            </div>
         </div>
     );
 });

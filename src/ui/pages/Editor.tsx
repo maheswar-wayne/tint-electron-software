@@ -33,18 +33,20 @@ const Editor = () => {
         for (const { model, _id } of response.data.data) {
             modelData.push({ name: model, _id });
         }
-        console.log("🚀 ~ getModel ~ modelData:", modelData)
+        console.log('🚀 ~ getModel ~ modelData:', modelData);
         setModelData(modelData);
     };
 
     const getPrinter = async () => {
         const printers = await window.electron.getPrinters();
-        setPrinters(printers.map((printer) => ({ name: printer.name, _id: printer.name })));
+        setPrinters(printers.map((printer:{name:string}) => ({name: printer.name, _id: printer.name})));
     };
 
     const handlePrint = async () => {
         const data = await svgEditorRef.current?.getData();
-        console.log('🚀 ~ handlePrint ~ data:', data);
+        const coordinates = svgEditorRef.current?.getCoordinates();
+        console.log('🚀 ~ handlePrint ~ coordinates:', coordinates);
+        // window.electron.getCoordinates(coordinates);
         window.electron.printData(data, selectedPrinter);
     };
 
